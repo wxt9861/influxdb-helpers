@@ -1,4 +1,4 @@
-"""InfluxDB-CQ-Maker"""
+"""InfluxDB-Measurements-Cleaner"""
 import click
 import influxdb
 import logging
@@ -240,7 +240,7 @@ def main(
         db (str): Database Name \n
         count (bool): Count measurement totals \n
         action (str): Action remove or dryrun \n
-        sleep (int): \n
+        sleep (int): Sleep (in seconds) between remove queries\n
         file (path): File containing measurements to remove \n
     """
 
