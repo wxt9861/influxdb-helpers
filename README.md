@@ -21,5 +21,6 @@ The script takes the following parameters:
 | --file, -f   | no       | none           | File containing measurements to remove. Each line of a file should be a measurement          |
 
 > Warnings/Info
+> * --count - using this option will generate a csv output file in the same directory where the script is located
 > * --count - Higher number wins: ie, if there are 100 records with a state and 200 records with a value, value will be reported. There is hard-coded 5 second delay betrween count operation to allow InfluxDB to fetch the data.
 > * --sleep - This is needed to ensure InfluxDB has enough time to compact shards after each measurement is removed. The value required will depend on many factors, however general rule should be to use a higher value to allow InfluxDB ample time to compact all required shards before a new remove operation is requested

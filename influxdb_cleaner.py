@@ -1,4 +1,5 @@
 """InfluxDB-Measurements-Cleaner"""
+import csv
 import click
 import influxdb
 import logging
@@ -9,6 +10,41 @@ from influxdb import InfluxDBClient
 from time import sleep
 
 logging.basicConfig(level=logging.INFO)
+
+
+class csv_output:
+    """Output CSV Class"""
+
+    def __init__(self):
+        self._fields = ["measurement", "count", "last_entry", "abandoned"]
+        self.file = (
+            f'measurements_{datetime.strftime(datetime.today(), "%Y-%m-%d")}.csv'
+        )
+
+    def create(self) -> bool:
+        """Create CSV File"""
+        try:
+            with open(self.file, "w") as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(self._fields)
+        except PermissionError as e:
+            print(f'Output error: {e.strerror}')
+            return False
+
+        return True
+
+    def insert(self, *args) -> bool:
+        """Insert row"""
+
+        try:
+            with open(self.file, "a") as csvfile:
+                csvwriter = csv.writer(csvfile)
+                csvwriter.writerow(list(args))
+        except Exception as error:
+            print(f'Output error: {error}')
+            return False
+
+        return True
 
 
 class influx_scan:
@@ -41,6 +77,11 @@ class influx_scan:
         )
         self.file = file
         self.input_data = []
+
+        if self.count:
+            self.output = csv_output()
+            if self.output.create():
+                print(f'Output file created: {self.output.file}')
 
         try:
             self.client = InfluxDBClient(
@@ -98,11 +139,21 @@ class influx_scan:
                     print(measurement_total)
                     print(records_total)
                     print(remove_records_total)
-                    print(f"Last measurement: {last_entry_date}")
+                    print(last_entry_date)
                     if last_entry_date is None:
                         pass
                     elif last_entry_date < self.abandoned:
                         print("Abandoned")
+                        is_abandoned = True
+                    else:
+                        is_abandoned = False
+
+                    self.output.insert(
+                        measurement["name"],
+                        measurement_total,
+                        last_entry_date,
+                        is_abandoned,
+                    )
                 else:
                     print("Unable to get total for measurement")
                 sleep(5)
