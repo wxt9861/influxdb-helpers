@@ -17,6 +17,7 @@ The script takes the following parameters:
 | --count      | no       | none           | Enable to count number of items in a measurements containing a value or a state.             |
 | --action, -a | no       | dryrun         | dryrun or remove. Remove requires an additional input file containing measurements to remove |
 | --sleep, -s  | no       | 120            | Seconds to wait between remove operations. See warning below                                 |
+| --abandoned  | no       | 180            | Identify measurement as abandoned if last entry is older than specified number of days       |
 | --file, -f   | no       | none           | File containing measurements to remove. Each line of a file should be a measurement          |
 
 > Warnings/Info

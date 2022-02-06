@@ -3,6 +3,8 @@ import click
 import influxdb
 import logging
 import requests
+from datetime import datetime, timedelta
+from dateutil import parser
 from influxdb import InfluxDBClient
 from time import sleep
 
@@ -22,6 +24,7 @@ class influx_scan:
         count: bool,
         action: str,
         sleep: int,
+        abandoned: int,
         file: str,
     ):
         """Intialize class"""
@@ -33,6 +36,9 @@ class influx_scan:
         self.count = count
         self.action = action
         self.sleep = sleep
+        self.abandoned = datetime.strftime(
+            (datetime.today() - timedelta(days=abandoned)), "%Y-%m-%d"
+        )
         self.file = file
         self.input_data = []
 
@@ -87,9 +93,16 @@ class influx_scan:
                         if measurement["name"] in self.input_data:
                             remove_records_total += measurement_total
 
+                    last_entry_date = self.check_last_entry(measurement["name"])
+
                     print(measurement_total)
                     print(records_total)
                     print(remove_records_total)
+                    print(f"Last measurement: {last_entry_date}")
+                    if last_entry_date is None:
+                        pass
+                    elif last_entry_date < self.abandoned:
+                        print("Abandoned")
                 else:
                     print("Unable to get total for measurement")
                 sleep(5)
@@ -150,6 +163,25 @@ class influx_scan:
                 f"Unable to retrieve measurements: {error.code}: {error.content}"
             )
             return -1
+
+    def check_last_entry(self, measurement) -> str:
+        """Check last entry date for measurement"""
+
+        try:
+            _query = (
+                f'SELECT time, value FROM "{measurement}" ORDER BY time DESC LIMIT 1'
+            )
+            _exec = self.client.query(_query)
+
+            for item in _exec.get_points():
+                parse_item = parser.parse(item["time"])
+
+                return datetime.strftime(parse_item, "%Y-%m-%d")
+        except influxdb.exceptions.InfluxDBClientError as error:
+            logging.error(
+                f"Unable to check last measurement time: {error.code}: {error.content}"
+            )
+            return None
 
     def remove_measurement(self, measurement_name) -> bool:
         """Remove measurement"""
@@ -220,6 +252,12 @@ class influx_scan:
     type=click.Path(exists=True, file_okay=True, readable=True),
     help="File containing measurements to remove",
 )
+@click.option(
+    "--abandoned",
+    type=int,
+    default=180,
+    help="Number of days to identify measurement as abandoned",
+)
 def main(
     host: str = None,
     port: int = None,
@@ -229,6 +267,7 @@ def main(
     count: bool = False,
     action: str = None,
     sleep: int = None,
+    abandoned: int = None,
     file: str = None,
 ):
     """Mass remove measurements from influxdb
@@ -241,13 +280,14 @@ def main(
         count (bool): Count measurement totals \n
         action (str): Action remove or dryrun \n
         sleep (int): Sleep (in seconds) between remove queries\n
+        abandoned (int): Number of days to identify measurement as abandoned\n
         file (path): File containing measurements to remove \n
     """
 
     if action == "remove" and file is None:
         print("Action remove requires an input file")
         exit()
-    influx_scan(host, port, user, pwd, db, count, action, sleep, file).main()
+    influx_scan(host, port, user, pwd, db, count, action, sleep, abandoned, file).main()
 
 
 if __name__ == "__main__":
