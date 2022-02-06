@@ -169,7 +169,8 @@ class influx_scan:
 
         try:
             _query = (
-                f'SELECT time, value FROM "{measurement}" ORDER BY time DESC LIMIT 1'
+                f'SELECT time, state, value '
+                f'FROM "{measurement}" ORDER BY time DESC LIMIT 1'
             )
             _exec = self.client.query(_query)
 
