@@ -1,17 +1,18 @@
 """InfluxDB-Measurements-Cleaner"""
 import csv
-import click
-import influxdb
 import logging
-import requests
 from datetime import datetime, timedelta
+from time import sleep
 from dateutil import parser
 from influxdb import InfluxDBClient
-from time import sleep
+import requests
+import click
+import influxdb
 
 logging.basicConfig(level=logging.INFO)
 
 
+# pylint: disable=invalid-name
 class csv_output:
     """Output CSV Class"""
 
@@ -47,6 +48,8 @@ class csv_output:
         return True
 
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-instance-attributes
 class influx_scan:
     """Influx Scan class"""
 
@@ -102,10 +105,10 @@ class influx_scan:
             exit()
 
         if self.db in [value for elem in self.all_dbs for value in elem.values()]:
-            logging.debug(f"Database exists: {self.db}")
+            logging.debug("Database exists: %s", self.db)
             self.client.switch_database(self.db)
         else:
-            logging.error(f"Database does not exist: {self.db}")
+            logging.error("Database does not exist: %s", self.db)
             logging.debug(
                 f"Found DBs: {[val for elem in self.all_dbs for val in elem.values()]}"
             )
