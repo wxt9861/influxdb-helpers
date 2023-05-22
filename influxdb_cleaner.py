@@ -1,6 +1,7 @@
 """InfluxDB-Measurements-Cleaner"""
 import csv
 import logging
+import sys
 from datetime import datetime, timedelta
 from time import sleep
 from dateutil import parser
@@ -25,11 +26,11 @@ class csv_output:
     def create(self) -> bool:
         """Create CSV File"""
         try:
-            with open(self.file, "w") as csvfile:
+            with open(self.file, "w", encoding="utf-8") as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(self._fields)
         except PermissionError as e:
-            print(f'Output error: {e.strerror}')
+            print(f"Output error: {e.strerror}")
             return False
 
         return True
@@ -38,11 +39,11 @@ class csv_output:
         """Insert row"""
 
         try:
-            with open(self.file, "a") as csvfile:
+            with open(self.file, "a", encoding="utf-8") as csvfile:
                 csvwriter = csv.writer(csvfile)
                 csvwriter.writerow(list(args))
-        except Exception as error:
-            print(f'Output error: {error}')
+        except Exception as error:  # pylint: disable=broad-exception-caught
+            print(f"Output error: {error}")
             return False
 
         return True
@@ -84,7 +85,7 @@ class influx_scan:
         if self.count:
             self.output = csv_output()
             if self.output.create():
-                print(f'Output file created: {self.output.file}')
+                print(f"Output file created: {self.output.file}")
 
         try:
             self.client = InfluxDBClient(
@@ -92,17 +93,17 @@ class influx_scan:
                 port=self.port,
                 username=self.user,
                 password=self.pwd,
-                timeout=10,
+                timeout=1000,
             )
             self.all_dbs = self.client.get_list_database()
         except requests.exceptions.ConnectTimeout:
             logging.error("Connection to InfludDB timed out")
-            exit()
+            sys.exit()
         except influxdb.exceptions.InfluxDBClientError as error:
             logging.error(
-                f"Unable to establish connection - {error.code}: {error.content}"
+                "Unable to establish connection - %s: %s", error.code, error.content
             )
-            exit()
+            sys.exit()
 
         if self.db in [value for elem in self.all_dbs for value in elem.values()]:
             logging.debug("Database exists: %s", self.db)
@@ -112,7 +113,7 @@ class influx_scan:
             logging.debug(
                 f"Found DBs: {[val for elem in self.all_dbs for val in elem.values()]}"
             )
-            exit()
+            sys.exit()
 
         if self.action == "remove":
             self.input_data = self.load_file()
@@ -195,9 +196,9 @@ class influx_scan:
             return _measurements
         except influxdb.exceptions.InfluxDBClientError as error:
             logging.error(
-                f"Unable to retrieve measurements: {error.code}: {error.content}"
+                "Unable to retrieve measurements: %s: %s", error.code, error.content
             )
-            exit()
+            sys.exit()
 
     def get_measurement_total(self, measurement) -> int:
         """Get total count of measurement records"""
@@ -214,7 +215,7 @@ class influx_scan:
                 return max(integers)
         except influxdb.exceptions.InfluxDBClientError as error:
             logging.error(
-                f"Unable to retrieve measurements: {error.code}: {error.content}"
+                "Unable to retrieve measurements: %s: %s", error.code, error.content
             )
             return -1
 
@@ -223,7 +224,7 @@ class influx_scan:
 
         try:
             _query = (
-                f'SELECT time, state, value '
+                f"SELECT time, state, value "
                 f'FROM "{measurement}" ORDER BY time DESC LIMIT 1'
             )
             _exec = self.client.query(_query)
@@ -234,7 +235,9 @@ class influx_scan:
                 return datetime.strftime(parse_item, "%Y-%m-%d")
         except influxdb.exceptions.InfluxDBClientError as error:
             logging.error(
-                f"Unable to check last measurement time: {error.code}: {error.content}"
+                "Unable to check last measurement time: %s: %s",
+                error.code,
+                error.content,
             )
             return None
 
@@ -257,12 +260,12 @@ class influx_scan:
 
         _output = []
         try:
-            with open(self.file) as _file:
+            with open(self.file, encoding="utf-8") as _file:
                 while _line := _file.readline().rstrip():
                     _output.append(_line)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(e)
-            exit()
+            sys.exit()
 
         return _output
 
@@ -341,7 +344,7 @@ def main(
 
     if action == "remove" and file is None:
         print("Action remove requires an input file")
-        exit()
+        sys.exit()
     influx_scan(host, port, user, pwd, db, count, action, sleep, abandoned, file).main()
 
 

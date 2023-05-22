@@ -2,8 +2,8 @@
 
 > All scripts require python3
 
-## influxdb_cleaner
-This script is made specifically to work with Home Assisant InfluxDB database. It's goal is to scan, count, and remove unwanted measurements.
+# influxdb_cleaner
+This script is made specifically to work with Home Assisant InfluxDB database. It's goal is to scan, count, and remove unwanted measurements. This has been tested against InfluxDB 1.x only.
 
 The script takes the following parameters:
 
@@ -21,6 +21,15 @@ The script takes the following parameters:
 | --file, -f   | no       | none           | File containing measurements to remove. Each line of a file should be a measurement          |
 
 > Warnings/Info
-> * --count - using this option will generate a csv output file in the same directory where the script is located
+> * --count - using this option will generate a csv output file in the same directory where the script is located.
 > * --count - Higher number wins: ie, if there are 100 records with a state and 200 records with a value, value will be reported. There is hard-coded 5 second delay betrween count operation to allow InfluxDB to fetch the data.
-> * --sleep - This is needed to ensure InfluxDB has enough time to compact shards after each measurement is removed. The value required will depend on many factors, however general rule should be to use a higher value to allow InfluxDB ample time to compact all required shards before a new remove operation is requested
+> * --sleep - This is needed to ensure InfluxDB has enough time to compact shards after each measurement is removed. The value required will depend on many factors, however general rule should be to use a higher value to allow InfluxDB ample time to compact all required shards before a new remove operation is requested.
+
+### Usage
+```shell
+# Dry run to generate csv file.
+python3 influxdb_cleaner.py -h <host> -U <user> -P <pass> --count
+
+# Remove unwatned measurements based on provided CSV file
+python3 influxdb_cleaner.py -h <host> -U <user> -P <password> --action remove --file <input_file> --sleep 90
+```
